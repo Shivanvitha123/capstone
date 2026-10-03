@@ -1,0 +1,162 @@
+<section class="admin-page">
+  <header class="page-header">
+    <div>
+      <div class="eyebrow">ADMINISTRATION</div>
+      <h1>Audit Logs</h1>
+      <p class="page-description">
+        Review recorded system activity, actors, and affected entities.
+      </p>
+    </div>
+
+    <button
+      class="refresh-button"
+      type="button"
+      (click)="loadAuditLogs()"
+      [disabled]="loading"
+    >
+      <span class="refresh-icon" aria-hidden="true">↻</span>
+      {{ loading ? 'Refreshing...' : 'Refresh logs' }}
+    </button>
+  </header>
+
+  <div class="summary-grid">
+    <article class="summary-card">
+      <div class="summary-label">Total audit records</div>
+      <div class="summary-value">{{ actionCount }}</div>
+      <div class="summary-caption">Records returned by the server</div>
+    </article>
+
+    <article class="summary-card">
+      <div class="summary-label">Unique actors</div>
+      <div class="summary-value">{{ uniqueActors }}</div>
+      <div class="summary-caption">Distinct user IDs in the records</div>
+    </article>
+  </div>
+
+  <section class="content-card">
+    <div class="table-header">
+      <div>
+        <h2>Activity history</h2>
+        <p>Audit events are displayed with the newest records first.</p>
+      </div>
+
+      <label class="search-box">
+        <span class="search-icon" aria-hidden="true">⌕</span>
+        <input
+          type="search"
+          placeholder="Search audit logs..."
+          [value]="searchTerm"
+          (input)="onSearch($event)"
+          aria-label="Search audit logs"
+        />
+      </label>
+    </div>
+
+    <div *ngIf="loading" class="state-message">
+      <span class="loader"></span>
+      <span>Loading audit logs...</span>
+    </div>
+
+    <div *ngIf="!loading && errorMessage" class="state-message error-state">
+      <span>{{ errorMessage }}</span>
+      <button type="button" class="retry-button" (click)="loadAuditLogs()">
+        Try again
+      </button>
+    </div>
+
+    <div
+      *ngIf="!loading && !errorMessage && logs.length === 0"
+      class="state-message"
+    >
+      No audit records were returned by the server.
+    </div>
+
+    <div
+      *ngIf="!loading && !errorMessage && logs.length > 0 && filteredLogs.length === 0"
+      class="state-message"
+    >
+      No audit records match your search.
+    </div>
+
+    <div
+      *ngIf="!loading && !errorMessage && filteredLogs.length > 0"
+      class="table-wrapper"
+    >
+      <table>
+        <thead>
+          <tr>
+            <th>Event</th>
+            <th>Actor</th>
+            <th>Action</th>
+            <th>Entity</th>
+            <th>Description</th>
+            <th>Date &amp; time</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr
+            *ngFor="let log of filteredLogs; trackBy: trackByLogId"
+          >
+            <td>
+              <span class="event-id">#{{ log.id }}</span>
+            </td>
+
+            <td>
+              <div class="actor-cell">
+                <span class="actor-avatar">
+                  {{ log.actorUserId ?? '?' }}
+                </span>
+
+                <div class="actor-details">
+                  <span class="actor-name">
+                    User {{ log.actorUserId ?? 'Unknown' }}
+                  </span>
+                  <span class="actor-role">
+                    {{ log.actorRole || 'Unknown role' }}
+                  </span>
+                </div>
+              </div>
+            </td>
+
+            <td>
+              <span class="action-badge">
+                {{ log.action || 'Unspecified' }}
+              </span>
+            </td>
+
+            <td>
+              <div class="entity-cell">
+                <span class="entity-type">
+                  {{ log.entityType || '—' }}
+                </span>
+                <span class="entity-id" *ngIf="log.entityId != null">
+                  #{{ log.entityId }}
+                </span>
+              </div>
+            </td>
+
+            <td>
+              <span class="description">
+                {{ log.description || '—' }}
+              </span>
+            </td>
+
+            <td>
+              <span class="date-value">
+                {{ log.createdAt ? (log.createdAt | date:'medium') : '—' }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <footer
+      class="table-footer"
+      *ngIf="!loading && !errorMessage && filteredLogs.length > 0"
+    >
+      Showing {{ filteredLogs.length }} of {{ logs.length }} audit records
+    </footer>
+  </section>
+</section>

@@ -1,0 +1,864 @@
+<section class="page">
+  <div class="page-header">
+    <div>
+      <div class="eyebrow">
+        UNDERWRITING & POLICY
+      </div>
+      <h1>Policies</h1>
+      <p>
+        Create, manage and review insurance policies
+        across your organization.
+      </p>
+    </div>
+    @if (canCreate()) {
+      <button
+        class="primary-btn"
+        type="button"
+        (click)="openCreate()">
+        <span>＋</span>
+        Create Policy
+      </button>
+    }
+  </div>
+
+  @if (successMessage$ | async; as message) {
+    <div class="alert success">
+      <span>✓</span>
+      {{ message }}
+    </div>
+  }
+
+  @if (error$ | async; as error) {
+    <div class="alert error">
+      <span>!</span>
+      {{ error }}
+    </div>
+  }
+
+  @if (cancellationSuccess) {
+    <div class="alert success">
+      <span>✓</span>
+      {{ cancellationSuccess }}
+    </div>
+  }
+
+  @if (cancellationError) {
+    <div class="alert error">
+      <span>!</span>
+      {{ cancellationError }}
+    </div>
+  }
+
+  @if (paymentSuccess) {
+    <div class="alert success">
+      <span>✓</span>
+      {{ paymentSuccess }}
+    </div>
+  }
+
+  @if (paymentError) {
+    <div class="alert error">
+      <span>!</span>
+      {{ paymentError }}
+    </div>
+  }
+
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-icon">▣</div>
+      <div>
+        <span>Total Policies</span>
+        <strong>
+          {{ (policies$ | async)?.length ?? 0 }}
+        </strong>
+      </div>
+    </div>
+
+    <div class="summary-card">
+      <div class="summary-icon draft">◷</div>
+      <div>
+        <span>Draft</span>
+        <strong>
+          {{
+            ((policies$ | async) ?? [])
+              | statusCount:'DRAFT'
+          }}
+        </strong>
+      </div>
+    </div>
+
+    <div class="summary-card">
+      <div class="summary-icon submitted">↗</div>
+      <div>
+        <span>Submitted</span>
+        <strong>
+          {{
+            ((policies$ | async) ?? [])
+              | statusCount:'SUBMITTED'
+          }}
+        </strong>
+      </div>
+    </div>
+
+    <div class="summary-card">
+      <div class="summary-icon active">✓</div>
+      <div>
+        <span>Active</span>
+        <strong>
+          {{
+            ((policies$ | async) ?? [])
+              | statusCount:'ACTIVE'
+          }}
+        </strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-card">
+    <div class="card-header">
+      <div>
+        <h2>Policy Portfolio</h2>
+        <p>
+          Review policy information and available actions.
+        </p>
+      </div>
+
+      <span class="role-chip">
+        {{ currentRole || 'USER' }}
+      </span>
+    </div>
+
+    @if (loading$ | async) {
+      <div class="loading">
+        <div class="spinner"></div>
+        <span>Loading policies...</span>
+      </div>
+    } @else {
+      @if ((policies$ | async)?.length === 0) {
+        <div class="empty-state">
+          <div class="empty-icon">▣</div>
+          <h3>No policies yet</h3>
+          <p>
+            Create your first policy to start managing
+            underwriting information.
+          </p>
+
+          @if (canCreate()) {
+            <button
+              class="secondary-btn"
+              type="button"
+              (click)="openCreate()">
+              Create your first policy
+            </button>
+          }
+        </div>
+      } @else {
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Policy</th>
+                <th>Business</th>
+                <th>Coverage</th>
+                <th>Premium</th>
+                <th>Tenure</th>
+                <th>Payment</th>
+                <th>Period</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              @for (
+                policy of (policies$ | async) ?? [];
+                track policy.id
+              ) {
+                <tr>
+                  <td>
+                    <div class="policy-name">
+                      <strong>
+                        {{ policy.policyNumber }}
+                      </strong>
+                      <span>
+                        {{ policy.policyType }}
+                      </span>
+                    </div>
+                  </td>
+
+                  <td>
+                    #{{ policy.businessId }}
+                  </td>
+
+                  <td>
+                    {{
+                      policy.coverageAmount
+                        | currency:'INR':'symbol':'1.0-0'
+                    }}
+                  </td>
+
+                  <td>
+                    {{
+                      policy.premiumAmount
+                        | currency:'INR':'symbol':'1.0-0'
+                    }}
+                  </td>
+
+                  <td>
+                    @if (policy.tenureValue && policy.tenureUnit) {
+                      {{ policy.tenureValue }}
+                      {{ policy.tenureUnit === 'YEARS' ? 'year(s)' : 'month(s)' }}
+                    } @else {
+                      <span>Legacy</span>
+                    }
+                  </td>
+
+                  <td>
+                    {{ policy.paymentFrequency || 'N/A' }}
+                  </td>
+
+                  <td>
+                    <div class="date-range">
+                      <span>
+                        {{ policy.startDate | date:'dd MMM yyyy' }}
+                      </span>
+                      <span>→</span>
+                      <span>
+                        {{ policy.endDate | date:'dd MMM yyyy' }}
+                      </span>
+                    </div>
+                  </td>
+
+                  <td>
+                    <span
+                      class="status"
+                      [class]="getStatusClass(policy.status)">
+                      {{ policy.status.replace('_', ' ') }}
+                    </span>
+                  </td>
+
+                  <td>
+                    <div class="actions">
+                      <button
+                        class="icon-btn"
+                        type="button"
+                        title="View"
+                        (click)="viewPolicy(policy)">
+                        View
+                      </button>
+
+                      @if (canEdit(policy)) {
+                        <button
+                          class="icon-btn"
+                          type="button"
+                          (click)="openEdit(policy)">
+                          Edit
+                        </button>
+                      }
+
+                      @if (canSubmit(policy)) {
+                        <button
+                          class="action-btn"
+                          type="button"
+                          (click)="submit(policy)">
+                          Submit
+                        </button>
+                      }
+                    </div>
+                  </td>
+                </tr>
+
+                @if (selectedPolicy?.id === policy.id) {
+                  <tr class="details-row">
+                    <td colspan="9">
+                      <div class="policy-details">
+                        <div class="detail-heading">
+                          <div>
+                            <span class="eyebrow">
+                              POLICY DETAILS
+                            </span>
+                            <h3>
+                              {{ policy.policyNumber }}
+                            </h3>
+                          </div>
+
+                          <button
+                            type="button"
+                            class="close-detail"
+                            (click)="selectedPolicy = null">
+                            ×
+                          </button>
+                        </div>
+
+                        <div class="detail-grid">
+                          <div>
+                            <label>Policy ID</label>
+                            <strong>#{{ policy.id }}</strong>
+                          </div>
+
+                          <div>
+                            <label>Business ID</label>
+                            <strong>#{{ policy.businessId }}</strong>
+                          </div>
+
+                          <div>
+                            <label>Owner ID</label>
+                            <strong>#{{ policy.ownerId }}</strong>
+                          </div>
+
+                          <div>
+                            <label>Policy Type</label>
+                            <strong>{{ policy.policyType }}</strong>
+                          </div>
+
+                          <div>
+                            <label>Coverage</label>
+                            <strong>
+                              {{
+                                policy.coverageAmount
+                                  | currency:'INR':'symbol':'1.0-0'
+                              }}
+                            </strong>
+                          </div>
+
+                          <div>
+                            <label>Coverage Details</label>
+                            <strong>
+                              {{ policy.coverageDetails || 'Not specified' }}
+                            </strong>
+                          </div>
+
+                          <div>
+                            <label>Coverage Location</label>
+                            <strong>
+                              {{ policy.coverageLocation || 'Not specified' }}
+                            </strong>
+                          </div>
+
+                          <div>
+                            <label>Premium</label>
+                            <strong>
+                              {{
+                                policy.premiumAmount
+                                  | currency:'INR':'symbol':'1.0-0'
+                              }}
+                            </strong>
+                          </div>
+
+                          <div>
+                            <label>Tenure</label>
+                            <strong>
+                              {{ policy.tenureValue }}
+                              {{ policy.tenureUnit }}
+                            </strong>
+                          </div>
+
+                          <div>
+                            <label>Payment Frequency</label>
+                            <strong>
+                              {{ policy.paymentFrequency }}
+                            </strong>
+                          </div>
+
+                          <div>
+                            <label>Start Date</label>
+                            <strong>
+                              {{ policy.startDate | date:'dd MMM yyyy' }}
+                            </strong>
+                          </div>
+
+                          <div>
+                            <label>End Date</label>
+                            <strong>
+                              {{ policy.endDate | date:'dd MMM yyyy' }}
+                            </strong>
+                          </div>
+
+                          <div>
+                            <label>Created</label>
+                            <strong>
+                              {{ policy.createdAt | date:'dd MMM yyyy, hh:mm a' }}
+                            </strong>
+                          </div>
+
+                          <div>
+                            <label>Updated</label>
+                            <strong>
+                              {{ policy.updatedAt | date:'dd MMM yyyy, hh:mm a' }}
+                            </strong>
+                          </div>
+                        </div>
+
+                        @if (policy.description) {
+                          <div class="description">
+                            <label>Description</label>
+                            <p>{{ policy.description }}</p>
+                          </div>
+                        }
+
+                        @if (
+                          currentRole === 'BUSINESS_OWNER' &&
+                          ['APPROVED', 'ACTIVE'].includes(policy.status)
+                        ) {
+                          <div class="status-management">
+                            <div>
+                              <label>Policy Payment</label>
+                              <p>
+                                Make a mock payment for this approved or active policy.
+                              </p>
+                            </div>
+
+                            <button
+                              type="button"
+                              class="action-btn"
+                              [disabled]="paymentBusyPolicyId !== null"
+                              (click)="payForPolicy(policy)">
+                              {{
+                                paymentBusyPolicyId === policy.id
+                                  ? 'Processing...'
+                                  : 'Pay Premium'
+                              }}
+                            </button>
+                          </div>
+                        }
+
+                        @if (canRequestCancellation(policy)) {
+                          <div class="status-management">
+                            <div>
+                              <label>Policy Cancellation</label>
+                              <p>
+                                Submit a cancellation request for this policy.
+                              </p>
+                            </div>
+
+                            <button
+                              type="button"
+                              class="cancellation-btn"
+                              (click)="openCancellationRequest(policy)">
+                              Request Cancellation
+                            </button>
+                          </div>
+                        }
+
+                        @if (policy.status === 'CANCELLATION_REQUESTED') {
+                          <div class="cancellation-panel">
+                            <label>Cancellation Request</label>
+
+                            <p>
+                              {{ policy.cancellationReason || 'No reason provided.' }}
+                            </p>
+
+                            @if (canReviewCancellation(policy)) {
+                              <div class="cancellation-review-actions">
+                                <button
+                                  type="button"
+                                  class="approve-btn"
+                                  [disabled]="cancellationBusy"
+                                  (click)="reviewCancellation(policy, true)">
+                                  Approve Cancellation
+                                </button>
+
+                                <button
+                                  type="button"
+                                  class="reject-btn"
+                                  [disabled]="cancellationBusy"
+                                  (click)="reviewCancellation(policy, false)">
+                                  Reject Cancellation
+                                </button>
+                              </div>
+                            }
+                          </div>
+                        }
+
+                        @if (canChangeStatus()) {
+                          <div class="status-management">
+                            <div>
+                              <label>Underwriting Status</label>
+
+                              <p>
+                                Change the policy workflow status.
+                              </p>
+                            </div>
+
+                            <select
+                              [value]="policy.status"
+                              (change)="changeStatus(
+                                policy,
+                                $any($event.target).value
+                              )">
+                              @for (status of statuses; track status) {
+                                <option [value]="status">
+                                  {{ status.replace('_', ' ') }}
+                                </option>
+                              }
+                            </select>
+                          </div>
+                        }
+                      </div>
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    }
+  </div>
+</section>
+
+@if (showForm) {
+  <div
+    class="modal-backdrop"
+    (click)="closeForm()">
+    <div
+      class="modal"
+      (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <span class="eyebrow">
+            {{ editingPolicy ? 'UPDATE POLICY' : 'NEW POLICY' }}
+          </span>
+
+          <h2>
+            {{ editingPolicy ? 'Edit Policy' : 'Create Policy' }}
+          </h2>
+        </div>
+
+        <button
+          type="button"
+          class="modal-close"
+          (click)="closeForm()">
+          ×
+        </button>
+      </div>
+
+      <form
+        [formGroup]="policyForm"
+        (ngSubmit)="savePolicy()">
+        @if (!editingPolicy) {
+          <div class="standard-policy-selector">
+            <div class="field full">
+              <label for="standardPolicy">
+                Start with a Standard Policy
+              </label>
+
+              <p class="field-hint">
+                Select a preloaded policy to automatically fill in
+                its details, or leave this blank to create a custom policy.
+              </p>
+
+              <select
+                id="standardPolicy"
+                [(ngModel)]="selectedStandardPolicyId"
+                [ngModelOptions]="{ standalone: true }"
+                (change)="applyStandardPolicy()"
+                [disabled]="standardPoliciesLoading">
+                <option value="">
+                  Create a custom policy
+                </option>
+
+                @for (template of standardPolicies; track template.id) {
+                  <option [value]="template.id">
+                    {{ template.name }}
+                  </option>
+                }
+              </select>
+
+              @if (standardPoliciesLoading) {
+                <small>Loading standard policies...</small>
+              }
+
+              @if (standardPoliciesError) {
+                <small class="error-text">
+                  {{ standardPoliciesError }}
+                </small>
+              }
+
+              @if (
+                !standardPoliciesLoading &&
+                !standardPoliciesError &&
+                standardPolicies.length === 0
+              ) {
+                <small>
+                  No standard policies are currently available.
+                  You can still create a custom policy.
+                </small>
+              }
+            </div>
+          </div>
+        }
+
+        <div class="form-grid">
+          <div class="field">
+            <label>Business ID *</label>
+
+            <input
+              type="number"
+              formControlName="businessId"
+              placeholder="Enter business ID">
+
+            @if (
+              policyForm.controls.businessId.touched &&
+              policyForm.controls.businessId.invalid
+            ) {
+              <small>
+                Valid business ID is required.
+              </small>
+            }
+          </div>
+
+          <div class="field">
+            <label>Policy Number *</label>
+
+            <input
+              type="text"
+              formControlName="policyNumber"
+              placeholder="POL-2026-001">
+
+            @if (
+              policyForm.controls.policyNumber.touched &&
+              policyForm.controls.policyNumber.invalid
+            ) {
+              <small>
+                Policy number is required.
+              </small>
+            }
+          </div>
+
+          <div class="field">
+            <label>Policy Type *</label>
+
+            <input
+              type="text"
+              formControlName="policyType"
+              placeholder="Property Insurance">
+
+            @if (
+              policyForm.controls.policyType.touched &&
+              policyForm.controls.policyType.invalid
+            ) {
+              <small>
+                Policy type is required.
+              </small>
+            }
+          </div>
+
+          <div class="field">
+            <label>Coverage Amount *</label>
+
+            <input
+              type="number"
+              formControlName="coverageAmount"
+              placeholder="Enter coverage amount">
+
+            @if (
+              policyForm.controls.coverageAmount.touched &&
+              policyForm.controls.coverageAmount.invalid
+            ) {
+              <small>
+                Coverage amount must be greater than zero.
+              </small>
+            }
+          </div>
+
+          <div class="field">
+            <label>Premium Amount *</label>
+
+            <input
+              type="number"
+              formControlName="premiumAmount"
+              placeholder="Enter premium amount">
+
+            @if (
+              policyForm.controls.premiumAmount.touched &&
+              policyForm.controls.premiumAmount.invalid
+            ) {
+              <small>
+                Premium amount must be greater than zero.
+              </small>
+            }
+          </div>
+
+          <div class="field">
+            <label>Tenure Value *</label>
+
+            <input
+              type="number"
+              formControlName="tenureValue"
+              placeholder="Enter tenure">
+
+            @if (
+              policyForm.controls.tenureValue.touched &&
+              policyForm.controls.tenureValue.invalid
+            ) {
+              <small>
+                Tenure must be at least one.
+              </small>
+            }
+          </div>
+
+          <div class="field">
+            <label>Tenure Unit *</label>
+
+            <select formControlName="tenureUnit">
+              <option value="MONTHS">Months</option>
+              <option value="YEARS">Years</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Payment Frequency *</label>
+
+            <select formControlName="paymentFrequency">
+              <option value="MONTHLY">Monthly</option>
+              <option value="YEARLY">Yearly</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Start Date *</label>
+
+            <input
+              type="date"
+              formControlName="startDate">
+
+            @if (
+              policyForm.controls.startDate.touched &&
+              policyForm.controls.startDate.invalid
+            ) {
+              <small>
+                Start date is required.
+              </small>
+            }
+          </div>
+
+          <div class="field">
+  <label for="endDate">End Date</label>
+
+  <input
+    id="endDate"
+    type="date"
+    [value]="calculatedEndDate ?? ''"
+    readonly
+  />
+
+  @if (
+    !calculatedEndDate &&
+    policyForm.controls.startDate.touched
+  ) {
+    <small class="error">
+      Please enter a valid start date and policy tenure.
+    </small>
+  }
+</div>
+
+          <div class="field full">
+            <label>Coverage Details</label>
+
+            <textarea
+              rows="3"
+              formControlName="coverageDetails"
+              placeholder="Describe what the policy covers"></textarea>
+          </div>
+
+          <div class="field full">
+            <label>Coverage Location</label>
+
+            <input
+              type="text"
+              formControlName="coverageLocation"
+              placeholder="Enter the insured location">
+          </div>
+
+          <div class="field full">
+            <label>Description</label>
+
+            <textarea
+              rows="4"
+              formControlName="description"
+              placeholder="Additional policy information"></textarea>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="secondary-btn"
+            (click)="closeForm()">
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            class="action-btn"
+            [disabled]="saving">
+            {{ saving ? 'Saving...' : (editingPolicy ? 'Update Policy' : 'Create Policy') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+@if (showCancellationModal) {
+  <div
+    class="modal-backdrop"
+    (click)="closeCancellationRequest()">
+    <div
+      class="modal cancellation-modal"
+      (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <span class="eyebrow">POLICY CANCELLATION</span>
+          <h2>Request Cancellation</h2>
+        </div>
+
+        <button
+          type="button"
+          class="modal-close"
+          (click)="closeCancellationRequest()">
+          ×
+        </button>
+      </div>
+
+      <form
+        [formGroup]="cancellationForm"
+        (ngSubmit)="submitCancellationRequest()">
+        <div class="field full">
+          <label>Reason for Cancellation *</label>
+
+          <textarea
+            rows="5"
+            formControlName="reason"
+            placeholder="Explain why you want to cancel this policy"></textarea>
+
+          @if (
+            cancellationForm.controls.reason.touched &&
+            cancellationForm.controls.reason.invalid
+          ) {
+            <small>
+              Please provide a cancellation reason.
+            </small>
+          }
+        </div>
+
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="secondary-btn"
+            (click)="closeCancellationRequest()">
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            class="cancellation-btn"
+            [disabled]="cancellationBusy">
+            {{ cancellationBusy ? 'Submitting...' : 'Submit Request' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

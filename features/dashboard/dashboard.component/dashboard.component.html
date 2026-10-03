@@ -1,0 +1,553 @@
+@if (user$ | async; as user) {
+  @if (user.role.replace('ROLE_', '').toUpperCase() === 'ADMIN') {
+    <div class="admin-dashboard">
+
+      <section class="dashboard-heading">
+        <div class="heading-copy">
+          <span class="eyebrow">RiskTwin Nexus / Administration</span>
+          <h1>Admin Analytics</h1>
+          <p>
+            Monitor policy activity, premium distribution, and claims
+            performance across your portfolio.
+          </p>
+        </div>
+
+        <div class="heading-actions">
+          <span class="live-indicator">
+            <span class="live-dot"></span>
+            Portfolio overview
+          </span>
+
+          <button
+            class="refresh-button"
+            type="button"
+            (click)="refreshDashboard()"
+            aria-label="Refresh dashboard"
+          >
+            <span class="refresh-icon">↻</span>
+            Refresh
+          </button>
+        </div>
+      </section>
+
+      @if (dashboardState$ | async; as state) {
+
+        @if (state.loading) {
+          <section class="dashboard-state loading-state">
+            <div class="spinner"></div>
+            <h2>Loading analytics</h2>
+            <p>
+              Retrieving the latest policy and claims information.
+            </p>
+          </section>
+        }
+
+        @else if (state.error) {
+          <section class="dashboard-state error-state">
+            <div class="state-icon">!</div>
+            <h2>Unable to load analytics</h2>
+            <p>
+              The dashboard could not retrieve the analytics data.
+              Check that the required services are running and try again.
+            </p>
+
+            <button
+              class="primary-button"
+              type="button"
+              (click)="refreshDashboard()"
+            >
+              Try again
+            </button>
+          </section>
+        }
+
+        @else if (state.data; as dashboard) {
+
+          <section class="overview-section">
+            <div class="section-heading">
+              <div>
+                <h2>Portfolio overview</h2>
+                <p>
+                  Key indicators from the current policy and claims data.
+                </p>
+              </div>
+            </div>
+
+            <div class="metrics-grid">
+
+              <article class="metric-card metric-primary">
+                <div class="metric-top">
+                  <span class="metric-label">Total premium</span>
+                  <span class="metric-icon">₹</span>
+                </div>
+
+                <div class="metric-value">
+                  {{ dashboard.totalPremium | currency:'INR':'symbol':'1.0-0' }}
+                </div>
+
+                <div class="metric-footnote">
+                  Aggregate premium value
+                </div>
+              </article>
+
+              <article class="metric-card">
+                <div class="metric-top">
+                  <span class="metric-label">Total policies</span>
+                  <span class="metric-icon icon-blue">▤</span>
+                </div>
+
+                <div class="metric-value">
+                  {{ dashboard.totalPolicies | number }}
+                </div>
+
+                <div class="metric-footnote">
+                  Policies in the returned dataset
+                </div>
+              </article>
+
+              <article class="metric-card">
+                <div class="metric-top">
+                  <span class="metric-label">Active policies</span>
+                  <span class="metric-icon icon-green">✓</span>
+                </div>
+
+                <div class="metric-value">
+                  {{ dashboard.activePolicies | number }}
+                </div>
+
+                <div class="metric-footnote">
+                  Currently marked active
+                </div>
+              </article>
+
+              <article class="metric-card">
+                <div class="metric-top">
+                  <span class="metric-label">Monthly premium</span>
+                  <span class="metric-icon icon-purple">◷</span>
+                </div>
+
+                <div class="metric-value">
+                  {{ dashboard.monthlyPremium | currency:'INR':'symbol':'1.0-0' }}
+                </div>
+
+                <div class="metric-footnote">
+                  Based on policy start dates
+                </div>
+              </article>
+
+              <article class="metric-card">
+                <div class="metric-top">
+                  <span class="metric-label">Yearly premium</span>
+                  <span class="metric-icon icon-purple">▦</span>
+                </div>
+
+                <div class="metric-value">
+                  {{ dashboard.yearlyPremium | currency:'INR':'symbol':'1.0-0' }}
+                </div>
+
+                <div class="metric-footnote">
+                  Based on policy start dates
+                </div>
+              </article>
+
+              <article class="metric-card">
+                <div class="metric-top">
+                  <span class="metric-label">Total claims</span>
+                  <span class="metric-icon icon-orange">⚑</span>
+                </div>
+
+                <div class="metric-value">
+                  {{ dashboard.totalClaims | number }}
+                </div>
+
+                <div class="metric-footnote">
+                  Claims in the returned dataset
+                </div>
+              </article>
+
+              <article class="metric-card">
+                <div class="metric-top">
+                  <span class="metric-label">Settled claims</span>
+                  <span class="metric-icon icon-green">✓</span>
+                </div>
+
+                <div class="metric-value">
+                  {{ dashboard.settledClaims | number }}
+                </div>
+
+                <div class="metric-footnote">
+                  Claims marked as settled
+                </div>
+              </article>
+
+              <article class="metric-card">
+                <div class="metric-top">
+                  <span class="metric-label">Claims paid</span>
+                  <span class="metric-icon icon-orange">₹</span>
+                </div>
+
+                <div class="metric-value">
+                  {{ dashboard.totalClaimsPaid | currency:'INR':'symbol':'1.0-0' }}
+                </div>
+
+                <div class="metric-footnote">
+                  Aggregate settled amount
+                </div>
+              </article>
+
+              <article class="metric-card">
+                <div class="metric-top">
+                  <span class="metric-label">Claims-to-premium ratio</span>
+                  <span class="metric-icon icon-red">%</span>
+                </div>
+
+                <div class="metric-value">
+                  {{ formatPercentage(dashboard.claimsToPremiumRatioPercent) }}
+                </div>
+
+                <div class="metric-footnote">
+                  Claims paid relative to premium
+                </div>
+              </article>
+
+              <!-- Payment-based financial metrics -->
+
+              <article class="metric-card metric-primary">
+                <div class="metric-top">
+                  <span class="metric-label">Collected premium</span>
+                  <span class="metric-icon icon-green">₹</span>
+                </div>
+
+                <div class="metric-value">
+                  {{
+                    dashboard.collectedPremium
+                      | currency:'INR':'symbol':'1.0-0'
+                  }}
+                </div>
+
+                <div class="metric-footnote">
+                  Total successful payment records
+                </div>
+              </article>
+
+              <article class="metric-card">
+                <div class="metric-top">
+                  <span class="metric-label">
+                    Profit before operating expenses
+                  </span>
+                  <span class="metric-icon icon-purple">₹</span>
+                </div>
+
+                <div class="metric-value">
+                  {{
+                    dashboard.profitBeforeOperatingExpenses
+                      | currency:'INR':'symbol':'1.0-0'
+                  }}
+                </div>
+
+                <div class="metric-footnote">
+                  Collected premium minus claims paid
+                </div>
+              </article>
+
+            </div>
+          </section>
+
+          <section class="analytics-grid">
+
+            <article class="panel revenue-panel">
+              <div class="panel-header">
+                <div>
+                  <h2>Premium trend</h2>
+                  <p>
+                    Monthly premium distribution by policy start date.
+                  </p>
+                </div>
+
+                <span class="panel-badge">Monthly</span>
+              </div>
+
+              @if (dashboard.monthlyRevenue.length > 0) {
+                <div class="chart">
+                  <div class="chart-y-label">Premium (₹)</div>
+
+                  <div class="chart-area">
+                    <div class="chart-gridlines">
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                    </div>
+
+                    <div class="chart-columns">
+                      @for (
+                        item of dashboard.monthlyRevenue;
+                        track trackByMonth($index, item)
+                      ) {
+                        <div class="chart-column">
+
+                          <div class="bar-value">
+                            {{ item.premiumRevenue | currency:'INR':'symbol':'1.0-0' }}
+                          </div>
+
+                          <div class="bar-track">
+                            <div
+                              class="bar"
+                              [style.height.%]="getMonthlyBarHeight(
+                                item.premiumRevenue,
+                                dashboard.monthlyRevenue
+                              )"
+                              [attr.title]="
+                                item.month + ': ' +
+                                (item.premiumRevenue | currency:'INR')
+                              "
+                            ></div>
+                          </div>
+
+                          <span class="chart-month">
+                            {{ item.month }}
+                          </span>
+
+                          <span class="chart-count">
+                            {{ item.policyCount }} policies
+                          </span>
+
+                        </div>
+                      }
+                    </div>
+                  </div>
+                </div>
+              } @else {
+                <div class="empty-state">
+                  <div class="empty-icon">▥</div>
+                  <h3>No monthly data available</h3>
+                  <p>
+                    Monthly premium information will appear here when available.
+                  </p>
+                </div>
+              }
+            </article>
+
+            <article class="panel portfolio-panel">
+              <div class="panel-header">
+                <div>
+                  <h2>Portfolio snapshot</h2>
+                  <p>Policy and claims summary.</p>
+                </div>
+
+                <span class="panel-badge">Overview</span>
+              </div>
+
+              <div class="snapshot-row">
+                <div class="snapshot-icon icon-blue">▤</div>
+
+                <div class="snapshot-copy">
+                  <span>Total policies</span>
+                  <strong>
+                    {{ dashboard.totalPolicies | number }}
+                  </strong>
+                </div>
+              </div>
+
+              <div class="snapshot-row">
+                <div class="snapshot-icon icon-green">✓</div>
+
+                <div class="snapshot-copy">
+                  <span>Active policies</span>
+                  <strong>
+                    {{ dashboard.activePolicies | number }}
+                  </strong>
+                </div>
+              </div>
+
+              <div class="snapshot-row">
+                <div class="snapshot-icon icon-orange">⚑</div>
+
+                <div class="snapshot-copy">
+                  <span>Total claims</span>
+                  <strong>
+                    {{ dashboard.totalClaims | number }}
+                  </strong>
+                </div>
+              </div>
+
+              <div class="snapshot-row">
+                <div class="snapshot-icon icon-purple">₹</div>
+
+                <div class="snapshot-copy">
+                  <span>Total claims paid</span>
+                  <strong>
+                    {{ dashboard.totalClaimsPaid | currency:'INR':'symbol':'1.0-0' }}
+                  </strong>
+                </div>
+              </div>
+
+              <div class="snapshot-row">
+                <div class="snapshot-icon icon-green">₹</div>
+
+                <div class="snapshot-copy">
+                  <span>Collected premium</span>
+                  <strong>
+                    {{
+                      dashboard.collectedPremium
+                        | currency:'INR':'symbol':'1.0-0'
+                    }}
+                  </strong>
+                </div>
+              </div>
+
+              <div class="snapshot-row">
+                <div class="snapshot-icon icon-purple">₹</div>
+
+                <div class="snapshot-copy">
+                  <span>Profit before operating expenses</span>
+                  <strong>
+                    {{
+                      dashboard.profitBeforeOperatingExpenses
+                        | currency:'INR':'symbol':'1.0-0'
+                    }}
+                  </strong>
+                </div>
+              </div>
+
+              <div class="snapshot-note">
+                <strong>Interpretation note</strong>
+                <p>
+                  Profit before operating expenses is calculated from
+                  successful payment records minus settled claims paid.
+                  It does not include operating expenses and is not net
+                  profit or a complete ROI calculation.
+                </p>
+              </div>
+            </article>
+
+          </section>
+
+          <section class="panel business-panel">
+            <div class="panel-header business-header">
+              <div>
+                <h2>Business analytics</h2>
+                <p>
+                  Policy and claims information grouped by business.
+                </p>
+              </div>
+
+              <span class="panel-badge">
+                {{ dashboard.businessAnalytics.length }} businesses
+              </span>
+            </div>
+
+            @if (dashboard.businessAnalytics.length > 0) {
+              <div class="table-container">
+                <table class="analytics-table">
+                  <thead>
+                    <tr>
+                      <th>Business ID</th>
+                      <th>Total policies</th>
+                      <th>Active policies</th>
+                      <th>Total premium</th>
+                      <th>Total claims</th>
+                      <th>Claims paid</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    @for (
+                      business of dashboard.businessAnalytics;
+                      track trackByBusiness($index, business)
+                    ) {
+                      <tr>
+                        <td>
+                          <span class="business-id">
+                            #{{ business.businessId }}
+                          </span>
+                        </td>
+
+                        <td>
+                          {{ business.totalPolicies | number }}
+                        </td>
+
+                        <td>
+                          <span class="active-count">
+                            {{ business.activePolicies | number }}
+                          </span>
+                        </td>
+
+                        <td class="amount-cell">
+                          {{ business.totalPremium | currency:'INR':'symbol':'1.0-0' }}
+                        </td>
+
+                        <td>
+                          {{ business.totalClaims | number }}
+                        </td>
+
+                        <td class="amount-cell">
+                          {{ business.totalClaimsPaid | currency:'INR':'symbol':'1.0-0' }}
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <div class="empty-state table-empty">
+                <div class="empty-icon">▤</div>
+                <h3>No business analytics available</h3>
+                <p>
+                  Business-level analytics will appear here when available.
+                </p>
+              </div>
+            }
+          </section>
+
+          <div class="dashboard-disclaimer">
+            <span class="disclaimer-icon">ⓘ</span>
+
+            <p>
+              <strong>Data interpretation:</strong>
+              Collected premium is calculated from successful payment records.
+              Profit before operating expenses is calculated by subtracting
+              settled claims paid from collected premium. This figure does not
+              include operating expenses and should not be treated as net profit
+              or complete ROI.
+            </p>
+          </div>
+
+        }
+      }
+    </div>
+
+  } @else {
+    <section class="user-dashboard">
+      <div class="user-welcome">
+        <span class="eyebrow">RiskTwin Nexus</span>
+        <h1>Welcome, {{ user.name || 'User' }}</h1>
+        <p>
+          Access your policies, business information, and claims.
+        </p>
+      </div>
+
+      <div class="user-shortcuts">
+
+        <a routerLink="/business" class="shortcut-card">
+          <span class="shortcut-icon">▤</span>
+          <strong>My Business</strong>
+          <span>View your business information</span>
+        </a>
+
+        <a routerLink="/policies" class="shortcut-card">
+          <span class="shortcut-icon">▣</span>
+          <strong>Policies</strong>
+          <span>View and manage your policies</span>
+        </a>
+
+        <a routerLink="/claims" class="shortcut-card">
+          <span class="shortcut-icon">⚑</span>
+          <strong>Claims</strong>
+          <span>Review your claims</span>
+        </a>
+
+      </div>
+    </section>
+  }
+}

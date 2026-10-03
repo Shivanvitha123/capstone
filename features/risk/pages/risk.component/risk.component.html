@@ -1,0 +1,721 @@
+<div class="risk-page">
+  <!-- Page Heading -->
+  <div class="page-heading">
+    <div>
+      <span class="eyebrow">RISK INTELLIGENCE</span>
+      <h1>Risk Management</h1>
+      <p>Assess business risks, simulate scenarios, and track mitigation actions.</p>
+    </div>
+
+    <div class="heading-actions">
+      @if (activeTab === 'assessments' && canManageAssessments) {
+        <button
+          type="button"
+          class="primary-btn"
+          (click)="openAssessmentForm()">
+          + New Assessment
+        </button>
+      }
+
+      @if (activeTab === 'simulations' && canManageSimulations) {
+        <button
+          type="button"
+          class="primary-btn"
+          (click)="openSimulationForm()">
+          + New Simulation
+        </button>
+      }
+
+      @if (activeTab === 'mitigations' && canCreateMitigations) {
+        <button
+          type="button"
+          class="primary-btn"
+          (click)="openMitigationForm()">
+          + New Mitigation
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Alerts -->
+  @if (error$ | async; as error) {
+    <div class="alert error" role="alert">
+      {{ error }}
+    </div>
+  }
+
+  @if (success$ | async; as success) {
+    <div class="alert success" role="status">
+      {{ success }}
+    </div>
+  }
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button
+      type="button"
+      [class.active]="activeTab === 'assessments'"
+      (click)="setTab('assessments')">
+      Risk Assessments
+    </button>
+
+    @if (canViewSimulations) {
+      <button
+        type="button"
+        [class.active]="activeTab === 'simulations'"
+        (click)="setTab('simulations')">
+        Simulations
+      </button>
+    }
+
+    <button
+      type="button"
+      [class.active]="activeTab === 'mitigations'"
+      (click)="setTab('mitigations')">
+      Mitigations
+    </button>
+  </div>
+
+  <!-- ASSESSMENTS -->
+  @if (activeTab === 'assessments') {
+    <section class="card">
+      <div class="card-header">
+        <h2>Risk Assessments</h2>
+        <p>Review the risk profile of registered businesses.</p>
+      </div>
+
+      @if (loading$ | async) {
+        <div class="loading">Loading assessments...</div>
+      } @else {
+        @if (assessments$ | async; as assessments) {
+          @if (assessments.length === 0) {
+            <div class="empty">
+              <div class="empty-icon">◎</div>
+              <h3>No risk assessments found</h3>
+              <p>Create an assessment to evaluate a business's risk profile.</p>
+
+              @if (canManageAssessments) {
+                <button
+                  type="button"
+                  class="primary-btn"
+                  (click)="openAssessmentForm()">
+                  Create Assessment
+                </button>
+              }
+            </div>
+          } @else {
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Assessment</th>
+                    <th>Business</th>
+                    <th>Policy</th>
+                    <th>Risk Score</th>
+                    <th>Risk Level</th>
+                    <th>Assessed On</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  @for (assessment of assessments; track assessment.id) {
+                    <tr>
+                      <td>#{{ assessment.id }}</td>
+                      <td>#{{ assessment.businessId }}</td>
+                      <td>
+                        {{ assessment.policyId ?? '—' }}
+                      </td>
+                      <td>
+                        <strong>{{ assessment.riskScore }}</strong>
+                      </td>
+                      <td>
+                        <span
+                          class="risk-badge"
+                          [ngClass]="riskClass(assessment.riskLevel)">
+                          {{ assessment.riskLevel }}
+                        </span>
+                      </td>
+                      <td>
+                        {{ assessment.createdAt | date:'dd MMM yyyy' }}
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        }
+      }
+    </section>
+  }
+
+  <!-- SIMULATIONS -->
+  @if (activeTab === 'simulations' && canViewSimulations) {
+    <section class="card">
+      <div class="card-header">
+        <h2>Risk Simulations</h2>
+        <p>Explore projected risk outcomes for different scenarios.</p>
+      </div>
+
+      @if (loading$ | async) {
+        <div class="loading">Loading simulations...</div>
+      } @else {
+        @if (simulations$ | async; as simulations) {
+          @if (simulations.length === 0) {
+            <div class="empty">
+              <div class="empty-icon">◈</div>
+              <h3>No simulations found</h3>
+              <p>Create a simulation to explore a potential risk scenario.</p>
+
+              @if (canManageSimulations) {
+                <button
+                  type="button"
+                  class="primary-btn"
+                  (click)="openSimulationForm()">
+                  Create Simulation
+                </button>
+              }
+            </div>
+          } @else {
+            <div class="simulation-grid">
+              @for (simulation of simulations; track simulation.id) {
+                <article class="simulation-card">
+                  <div class="simulation-top">
+                    <div>
+                      <span class="scenario-label">
+                        SIMULATION #{{ simulation.id }}
+                      </span>
+                      <h3>{{ simulation.scenarioName }}</h3>
+                    </div>
+
+                    <span class="status">
+                      {{ simulation.status }}
+                    </span>
+                  </div>
+
+                  <div class="simulation-score">
+                    <div>
+                      <span>Projected Risk Score</span>
+                      <strong>
+                        {{ simulation.projectedRiskScore ?? '—' }}
+                      </strong>
+                    </div>
+
+                    @if (simulation.projectedRiskLevel) {
+                      <span
+                        class="risk-badge"
+                        [ngClass]="riskClass(simulation.projectedRiskLevel)">
+                        {{ simulation.projectedRiskLevel }}
+                      </span>
+                    }
+                  </div>
+
+                  @if (simulation.resultSummary) {
+                    <p class="summary">
+                      {{ simulation.resultSummary }}
+                    </p>
+                  }
+
+                  @if (simulation.scenarioInput) {
+                    <p class="summary">
+                      {{ simulation.scenarioInput }}
+                    </p>
+                  }
+
+                  <div class="simulation-footer">
+                    <span>Business #{{ simulation.businessId }}</span>
+                    <span>
+                      {{ simulation.createdAt | date:'dd MMM yyyy' }}
+                    </span>
+                  </div>
+                </article>
+              }
+            </div>
+          }
+        }
+      }
+    </section>
+  }
+
+  <!-- MITIGATIONS -->
+  @if (activeTab === 'mitigations') {
+    <section class="card">
+      <div class="card-header mitigation-header">
+        <div>
+          <h2>Risk Mitigation Tracking</h2>
+          <p>
+            Track corrective actions, priorities, and completion status.
+          </p>
+        </div>
+
+        @if (canCreateMitigations) {
+          <button
+            class="primary-btn"
+            type="button"
+            (click)="openMitigationForm()">
+            + New Mitigation
+          </button>
+        }
+      </div>
+
+      @if (loading$ | async) {
+        <div class="loading">Loading mitigations...</div>
+      } @else {
+        @if (mitigations$ | async; as mitigations) {
+          @if (mitigations.length === 0) {
+            <div class="empty">
+              <div class="empty-icon">✓</div>
+              <h3>No mitigation tasks yet</h3>
+              <p>
+                Mitigation tasks created for risk assessments
+                will appear here.
+              </p>
+
+              @if (canCreateMitigations) {
+                <button
+                  class="primary-btn"
+                  type="button"
+                  (click)="openMitigationForm()">
+                  Create Mitigation
+                </button>
+              }
+            </div>
+          } @else {
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Mitigation</th>
+                    <th>Assessment</th>
+                    <th>Business</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                    <th>Target Date</th>
+                    <th>Completed</th>
+                    @if (canUpdateMitigations) {
+                      <th>Update Status</th>
+                    }
+                  </tr>
+                </thead>
+
+                <tbody>
+                  @for (mitigation of mitigations; track mitigation.id) {
+                    <tr>
+                      <td>
+                        <strong>{{ mitigation.mitigationTitle }}</strong>
+
+                        @if (mitigation.description) {
+                          <small class="mitigation-description">
+                            {{ mitigation.description }}
+                          </small>
+                        }
+                      </td>
+
+                      <td>#{{ mitigation.assessmentId }}</td>
+                      <td>#{{ mitigation.businessId }}</td>
+
+                      <td>
+                        <span
+                          class="priority-badge"
+                          [ngClass]="priorityClass(mitigation.priority)">
+                          {{ mitigation.priority }}
+                        </span>
+                      </td>
+
+                      <td>
+                        <span
+                          class="status mitigation-status"
+                          [ngClass]="mitigationStatusClass(mitigation.status)">
+                          {{ mitigation.status.replace('_', ' ') }}
+                        </span>
+                      </td>
+
+                      <td>
+                        {{ mitigation.targetDate
+                          ? (mitigation.targetDate | date:'dd MMM yyyy')
+                          : '—' }}
+                      </td>
+
+                      <td>
+                        {{ mitigation.completedAt
+                          ? (mitigation.completedAt | date:'dd MMM yyyy')
+                          : '—' }}
+                      </td>
+
+                      @if (canUpdateMitigations) {
+                        <td>
+                          <select
+                            class="status-select"
+                            [value]="mitigation.status"
+                            [disabled]="
+                              mitigation.status === 'COMPLETED' ||
+                              mitigation.status === 'CANCELLED'
+                            "
+                            (change)="updateMitigationStatus(
+                              mitigation,
+                              $any($event.target).value
+                            )">
+                            @for (
+                              status of availableStatuses(mitigation.status);
+                              track status
+                            ) {
+                              <option [value]="status">
+                                {{ status.replace('_', ' ') }}
+                              </option>
+                            }
+                          </select>
+                        </td>
+                      }
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        }
+      }
+    </section>
+  }
+</div>
+
+<!-- ASSESSMENT MODAL -->
+@if (showAssessmentForm && canManageAssessments) {
+  <div class="modal-backdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <span class="eyebrow">RISK ASSESSMENT</span>
+          <h2>Create Risk Assessment</h2>
+        </div>
+
+        <button
+          class="close-btn"
+          type="button"
+          aria-label="Close"
+          (click)="closeAssessmentForm()">
+          ×
+        </button>
+      </div>
+
+      <form
+        [formGroup]="assessmentForm"
+        (ngSubmit)="createAssessment()">
+
+        <div class="form-grid">
+          <label class="full">
+            Business
+
+            <select
+              formControlName="businessId"
+              (change)="onBusinessSelected()">
+              <option [ngValue]="0">Select a business</option>
+
+              @for (business of businesses; track business.id) {
+                <option [ngValue]="business.id">
+                  {{ business.businessName }}
+                </option>
+              }
+            </select>
+          </label>
+
+          <label>
+            Policy ID
+            <input
+              type="number"
+              min="0"
+              formControlName="policyId" />
+          </label>
+
+          <label>
+            Industry
+            <input
+              type="text"
+              formControlName="industry" />
+          </label>
+
+          <label>
+            Annual Revenue
+            <input
+              type="number"
+              min="0"
+              formControlName="annualRevenue" />
+          </label>
+
+          <label>
+            Employee Count
+            <input
+              type="number"
+              min="0"
+              formControlName="employeeCount" />
+          </label>
+
+          <label>
+            Branch Count
+            <input
+              type="number"
+              min="0"
+              formControlName="branchCount" />
+          </label>
+
+          <label>
+            Premises Type
+            <input
+              type="text"
+              formControlName="premisesType" />
+          </label>
+
+          <label>
+            Previous Insurance Claims
+            <input
+              type="number"
+              min="0"
+              formControlName="previousInsuranceClaims" />
+          </label>
+
+          <label class="checkbox-field">
+            <input
+              type="checkbox"
+              formControlName="existingInsurance" />
+            Existing Insurance
+          </label>
+        </div>
+
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="secondary-btn"
+            (click)="closeAssessmentForm()">
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            class="primary-btn"
+            [disabled]="assessmentForm.invalid">
+            Create Assessment
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- SIMULATION MODAL -->
+@if (showSimulationForm && canManageSimulations) {
+  <div class="modal-backdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <span class="eyebrow">RISK SIMULATION</span>
+          <h2>Create Simulation</h2>
+        </div>
+
+        <button
+          class="close-btn"
+          type="button"
+          aria-label="Close"
+          (click)="closeSimulationForm()">
+          ×
+        </button>
+      </div>
+
+      <form
+        [formGroup]="simulationForm"
+        (ngSubmit)="createSimulation()">
+
+        <div class="form-grid">
+          <label class="full">
+            Business
+
+            <select formControlName="businessId">
+              <option [ngValue]="0">Select a business</option>
+
+              @for (business of businesses; track business.id) {
+                <option [ngValue]="business.id">
+                  {{ business.businessName }}
+                </option>
+              }
+            </select>
+          </label>
+
+          <label>
+            Policy ID
+            <input
+              type="number"
+              min="0"
+              formControlName="policyId" />
+          </label>
+
+          <label>
+            Scenario Name
+            <input
+              type="text"
+              formControlName="scenarioName"
+              placeholder="e.g. Increased fire risk" />
+          </label>
+
+          <label class="full">
+            Scenario Input
+            <textarea
+              rows="4"
+              formControlName="scenarioInput"
+              placeholder="Describe the scenario...">
+            </textarea>
+          </label>
+        </div>
+
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="secondary-btn"
+            (click)="closeSimulationForm()">
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            class="primary-btn"
+            [disabled]="simulationForm.invalid">
+            Create Simulation
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- MITIGATION MODAL -->
+@if (canCreateMitigations && showMitigationForm) {
+  <div class="modal-backdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <span class="eyebrow">RISK MITIGATION</span>
+          <h2>Create Mitigation</h2>
+        </div>
+
+        <button
+          class="close-btn"
+          type="button"
+          aria-label="Close"
+          (click)="closeMitigationForm()">
+          ×
+        </button>
+      </div>
+
+      <form
+        [formGroup]="mitigationForm"
+        (ngSubmit)="createMitigation()">
+
+        <div class="form-grid">
+          <label class="full">
+            Risk Assessment
+
+            <select formControlName="assessmentId">
+              <option [ngValue]="0">
+                Select an assessment
+              </option>
+
+              @for (assessment of (assessments$ | async) ?? []; track assessment.id) {
+                <option [ngValue]="assessment.id">
+                  Assessment #{{ assessment.id }}
+                  — Business #{{ assessment.businessId }}
+                  — {{ assessment.riskLevel }}
+                </option>
+              }
+            </select>
+
+            @if (
+              mitigationForm.controls.assessmentId.touched &&
+              mitigationForm.controls.assessmentId.invalid
+            ) {
+              <small class="field-error">
+                Select a risk assessment.
+              </small>
+            }
+          </label>
+
+          <label class="full">
+            Mitigation Title
+
+            <input
+              type="text"
+              maxlength="255"
+              formControlName="mitigationTitle"
+              placeholder="e.g. Install fire suppression system" />
+
+            @if (
+              mitigationForm.controls.mitigationTitle.touched &&
+              mitigationForm.controls.mitigationTitle.invalid
+            ) {
+              <small class="field-error">
+                A title is required (maximum 255 characters).
+              </small>
+            }
+          </label>
+
+          <label class="full">
+            Description
+
+            <textarea
+              rows="4"
+              maxlength="2000"
+              formControlName="description"
+              placeholder="Describe the mitigation action...">
+            </textarea>
+          </label>
+
+          <label>
+            Priority
+
+            <select formControlName="priority">
+              @for (priority of priorities; track priority) {
+                <option [value]="priority">
+                  {{ priority }}
+                </option>
+              }
+            </select>
+          </label>
+
+          <label>
+            Assigned User ID (Optional)
+
+            <input
+              type="number"
+              min="1"
+              formControlName="assignedTo"
+              placeholder="User ID" />
+          </label>
+
+          <label class="full">
+            Target Date (Optional)
+
+            <input
+              type="date"
+              formControlName="targetDate" />
+
+            <small>
+              The target date cannot be in the past.
+            </small>
+          </label>
+        </div>
+
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="secondary-btn"
+            (click)="closeMitigationForm()">
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            class="primary-btn"
+            [disabled]="mitigationForm.invalid">
+            Create Mitigation
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

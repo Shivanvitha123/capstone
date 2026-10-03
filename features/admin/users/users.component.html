@@ -1,0 +1,168 @@
+<section class="admin-page">
+  <header class="page-header">
+    <div>
+      <div class="eyebrow">ADMINISTRATION</div>
+      <h1>User Management</h1>
+      <p class="page-description">
+        View registered users, account status, and assigned roles.
+      </p>
+    </div>
+
+    <button
+      class="refresh-button"
+      type="button"
+      (click)="loadUsers()"
+      [disabled]="loading"
+    >
+      <span class="refresh-icon" aria-hidden="true">↻</span>
+      {{ loading ? 'Refreshing...' : 'Refresh' }}
+    </button>
+  </header>
+
+  <div class="summary-grid">
+    <article class="summary-card">
+      <div class="summary-label">Total users</div>
+      <div class="summary-value">{{ users.length }}</div>
+      <div class="summary-caption">Registered accounts</div>
+    </article>
+
+    <article class="summary-card">
+      <div class="summary-label">Active users</div>
+      <div class="summary-value">{{ activeUsers }}</div>
+      <div class="summary-caption">Accounts marked active</div>
+    </article>
+
+    <article class="summary-card">
+      <div class="summary-label">Inactive users</div>
+      <div class="summary-value">{{ inactiveUsers }}</div>
+      <div class="summary-caption">Accounts marked inactive</div>
+    </article>
+
+    <article class="summary-card">
+      <div class="summary-label">Administrators</div>
+      <div class="summary-value">{{ adminUsers }}</div>
+      <div class="summary-caption">Users with admin role</div>
+    </article>
+  </div>
+
+  <section class="content-card">
+    <div class="table-header">
+      <div>
+        <h2>Registered users</h2>
+        <p>Review user accounts and access roles.</p>
+      </div>
+
+      <label class="search-box">
+        <span class="search-icon" aria-hidden="true">⌕</span>
+        <input
+          type="search"
+          placeholder="Search users..."
+          [value]="searchTerm"
+          (input)="onSearch($event)"
+          aria-label="Search users"
+        />
+      </label>
+    </div>
+
+    <div *ngIf="loading" class="state-message">
+      <span class="loader"></span>
+      <span>Loading users...</span>
+    </div>
+
+    <div *ngIf="!loading && errorMessage" class="state-message error-state">
+      <span>{{ errorMessage }}</span>
+      <button type="button" class="retry-button" (click)="loadUsers()">
+        Try again
+      </button>
+    </div>
+
+    <div
+      *ngIf="!loading && !errorMessage && users.length === 0"
+      class="state-message"
+    >
+      No users were returned by the server.
+    </div>
+
+    <div
+      *ngIf="!loading && !errorMessage && users.length > 0 && filteredUsers.length === 0"
+      class="state-message"
+    >
+      No users match your search.
+    </div>
+
+    <div
+      *ngIf="!loading && !errorMessage && filteredUsers.length > 0"
+      class="table-wrapper"
+    >
+      <table>
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>User ID</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Created</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr
+            *ngFor="let user of filteredUsers; trackBy: trackByUserId"
+          >
+            <td>
+              <div class="user-cell">
+                <div class="user-avatar">
+                  {{ user.name.charAt(0).toUpperCase() || '?' }}
+                </div>
+
+                <div class="user-details">
+                  <span class="user-name">{{ user.name || 'Unnamed user' }}</span>
+                  <span class="user-email">{{ user.email }}</span>
+                </div>
+              </div>
+            </td>
+
+            <td>
+              <span class="id-value">#{{ user.id }}</span>
+            </td>
+
+            <td>
+              <span class="role-badge">
+                {{ user.role.replace('ROLE_', '') || 'UNASSIGNED' }}
+              </span>
+            </td>
+
+            <td>
+              <span
+                class="status-badge"
+                [class.status-active]="user.active === true"
+                [class.status-inactive]="user.active === false"
+                [class.status-unknown]="user.active == null"
+              >
+                <span class="status-dot"></span>
+                {{
+                  user.active === true
+                    ? 'Active'
+                    : user.active === false
+                      ? 'Inactive'
+                      : 'Unknown'
+                }}
+              </span>
+            </td>
+
+            <td>
+              {{ user.createdAt ? (user.createdAt | date:'mediumDate') : '—' }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <footer
+      class="table-footer"
+      *ngIf="!loading && !errorMessage && filteredUsers.length > 0"
+    >
+      Showing {{ filteredUsers.length }} of {{ users.length }} users
+    </footer>
+  </section>
+</section>
