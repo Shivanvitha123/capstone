@@ -1,0 +1,184 @@
+<div class="app-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+
+    <!-- BRAND -->
+    <div class="sidebar-brand">
+      <div class="brand-icon">◈</div>
+      <div class="brand-text">
+        <h2>RiskTwin</h2>
+        <span>NEXUS</span>
+      </div>
+    </div>
+
+    <!-- USER PROFILE -->
+    @if (user$ | async; as user) {
+      <div class="sidebar-profile">
+        <div class="profile-avatar">
+          {{ user.name.charAt(0).toUpperCase() || 'U' }}
+        </div>
+
+        <div class="profile-info">
+          <strong>{{ user.name }}</strong>
+          <span>{{ user.role | roleLabel }}</span>
+        </div>
+      </div>
+    }
+
+    <!-- NAVIGATION -->
+    <nav class="sidebar-nav">
+
+      <span class="nav-heading">GENERAL</span>
+
+      <!-- DASHBOARD -->
+      <a
+        routerLink="/dashboard"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        class="nav-link"
+      >
+        <span class="nav-icon">⌂</span>
+
+        @if ((user$ | async)?.role === 'ADMIN') {
+          <span>Admin ROI Dashboard</span>
+        } @else {
+          <span>Dashboard</span>
+        }
+      </a>
+
+      <!-- BUSINESS -->
+      <a
+        routerLink="/business"
+        routerLinkActive="active"
+        class="nav-link"
+      >
+        <span class="nav-icon">◇</span>
+        <span>Business</span>
+      </a>
+
+      <!-- POLICIES -->
+      <a
+        routerLink="/policies"
+        routerLinkActive="active"
+        class="nav-link"
+      >
+        <span class="nav-icon">▣</span>
+        <span>Policies</span>
+      </a>
+
+      <!-- RISK INTELLIGENCE -->
+      <a
+        routerLink="/risk"
+        routerLinkActive="active"
+        class="nav-link"
+      >
+        <span class="nav-icon">◈</span>
+        <span>Risk Intelligence</span>
+      </a>
+
+      <!-- CLAIMS -->
+      <a
+        routerLink="/claims"
+        routerLinkActive="active"
+        class="nav-link"
+      >
+        <span class="nav-icon">✓</span>
+        <span>Claims</span>
+      </a>
+
+      <!-- ADMIN NAVIGATION -->
+      @if ((user$ | async)?.role === 'ADMIN') {
+        <span class="nav-heading admin-heading">
+          ADMINISTRATION
+        </span>
+
+        <a
+          routerLink="/users"
+          routerLinkActive="active"
+          class="nav-link"
+        >
+          <span class="nav-icon">♙</span>
+          <span>User Management</span>
+        </a>
+
+        <a
+          routerLink="/audit"
+          routerLinkActive="active"
+          class="nav-link"
+        >
+          <span class="nav-icon">☷</span>
+          <span>Audit Logs</span>
+        </a>
+      }
+
+      <!-- WORKSPACE -->
+      <span class="nav-heading">WORKSPACE</span>
+
+      <a
+        routerLink="/notifications"
+        routerLinkActive="active"
+        class="nav-link"
+      >
+        <span class="nav-icon">♧</span>
+        <span>Notifications</span>
+      </a>
+
+    </nav>
+
+    <!-- SIDEBAR FOOTER -->
+    <div class="sidebar-footer">
+      <button
+        type="button"
+        class="logout-button"
+        (click)="logout()"
+      >
+        <span class="nav-icon">⇥</span>
+        <span>Logout</span>
+      </button>
+    </div>
+
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <span class="topbar-title">RiskTwin Nexus</span>
+      </div>
+
+      <div class="topbar-right">
+        @if (user$ | async; as user) {
+          <div class="topbar-user">
+            <div class="topbar-avatar">
+              {{ user.name.charAt(0).toUpperCase() || 'U' }}
+            </div>
+
+            <div class="topbar-user-info">
+              <strong>{{ user.name }}</strong>
+              <span>{{ user.role | roleLabel }}</span>
+            </div>
+          </div>
+        }
+      </div>
+    </header>
+
+    <!-- PAGE CONTENT -->
+    <section class="page-content">
+      <router-outlet></router-outlet>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="main-footer">
+      <span>© {{ currentYear }} RiskTwin Nexus</span>
+      <span>Insurance Risk Management Platform</span>
+    </footer>
+
+  </main>
+
+</div>
+
+<!-- NOTIFICATIONS -->
+<app-notification></app-notification>
